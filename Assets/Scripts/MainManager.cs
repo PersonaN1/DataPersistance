@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,14 +13,13 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text PlayerBestScore;
     public GameObject GameOverText;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
-
-    
     // Start is called before the first frame update
     void Start()
     {
@@ -36,6 +37,9 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        var (score, name) = LoadBestScore();
+        ShowBestScore(score, name);
     }
 
     private void Update()
@@ -57,7 +61,7 @@ public class MainManager : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                SceneManager.LoadScene(0);
             }
         }
     }
@@ -66,11 +70,68 @@ public class MainManager : MonoBehaviour
     {
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
+        UpdateBestScore(m_Points);
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    public void UpdateBestScore(int score)
+    {
+        var (bestScore, bestPlayer) = LoadBestScore();
+        if (score > bestScore)
+        {
+            bestScore = score;
+            bestPlayer = ScoreManager.instance.playerName;
+            ScoreManager.instance.score = bestScore;
+
+            ShowBestScore(bestScore, bestPlayer);
+            SaveBestScore();
+        }
+    }
+
+    [System.Serializable]
+    class PlayerScore
+    {
+        public string playerName;
+        public int score;
+    }
+
+    public void SaveBestScore()
+    {
+        var data = new PlayerScore();
+        data.playerName = ScoreManager.instance.playerName;
+        data.score = ScoreManager.instance.score;
+
+        var json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + $"/{data.playerName}.json", json);
+    }
+    public (int, string) LoadBestScore()
+    {
+        var path = Application.persistentDataPath + $"/{ScoreManager.instance.playerName}.json";
+
+        if (File.Exists(path))
+        {
+            var json = File.ReadAllText(path);
+            var data = JsonUtility.FromJson<PlayerScore>(json);
+
+            PlayerBestScore.text= "Best score: " + data.playerName + ": " + data.score;
+
+            return (data.score, data.playerName);
+        }
+        else
+        {
+            return (0, "New Player");
+        }
+    }
+
+
+    private void ShowBestScore(int score, string name)
+    {
+        PlayerBestScore.text = "Best score: " + name + ": " + score;
     }
 }
