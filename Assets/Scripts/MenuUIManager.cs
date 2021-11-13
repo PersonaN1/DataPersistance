@@ -12,7 +12,7 @@ using UnityEngine.UI;
 
 public class MenuUIManager : MonoBehaviour
 {
-    public Text PlayerBestScoreText;
+    public Text PlayerBestScore;
     public InputField PlayerName;
     public void StartGame()
     {
@@ -36,5 +36,13 @@ public class MenuUIManager : MonoBehaviour
     void SubmitName(string text)
     {
         ScoreManager.instance.playerName = text;
+    }
+
+    void Start()
+    {
+        if (ScoreManager.instance.score > 0)
+        {
+            PlayerBestScore.text = "Best score: " + ScoreManager.instance.playerName + ": " + ScoreManager.instance.score;
+        }
     }
 }
